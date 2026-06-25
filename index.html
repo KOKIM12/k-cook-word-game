@@ -145,21 +145,39 @@
 
           const currentPointColor = type === 'enumeration' ? PINK_COLOR : BLUE_COLOR;
 
-          // 배경음악 설정 및 자동 재생 시도
+          // 배경음악 설정 및 자동 재생 시도 (사용자 상호작용 시 강제 재생 포함)
           useEffect(() => {
             bgmRef.current = new Audio("https://github.com/KOKIM12/k-cook-word-game/raw/refs/heads/main/Dumpling_Cart_Sunrise.mp3");
             bgmRef.current.loop = true;
             bgmRef.current.volume = 0.3;
             
-            const playPromise = bgmRef.current.play();
-            if (playPromise !== undefined) {
-              playPromise.catch(error => {
-                console.warn("Autoplay blocked by browser. User interaction needed.", error);
-                setIsBgmPlaying(false);
-              });
-            }
+            const tryPlayBgm = () => {
+              const playPromise = bgmRef.current.play();
+              if (playPromise !== undefined) {
+                playPromise.then(() => {
+                  setIsBgmPlaying(true);
+                  // 성공적으로 재생되면 이벤트 리스너 제거
+                  document.removeEventListener('click', tryPlayBgm);
+                  document.removeEventListener('keydown', tryPlayBgm);
+                  document.removeEventListener('touchstart', tryPlayBgm);
+                }).catch(error => {
+                  console.warn("Autoplay blocked. Waiting for interaction.", error);
+                  setIsBgmPlaying(false);
+                });
+              }
+            };
+
+            tryPlayBgm(); // 컴포넌트 마운트 시 즉시 시도
+
+            // 브라우저 자동재생 정책에 의해 막힐 경우를 대비해 화면 클릭/터치 시 재생 시도
+            document.addEventListener('click', tryPlayBgm);
+            document.addEventListener('keydown', tryPlayBgm);
+            document.addEventListener('touchstart', tryPlayBgm);
 
             return () => {
+              document.removeEventListener('click', tryPlayBgm);
+              document.removeEventListener('keydown', tryPlayBgm);
+              document.removeEventListener('touchstart', tryPlayBgm);
               if (bgmRef.current) {
                 bgmRef.current.pause();
                 bgmRef.current.src = "";
