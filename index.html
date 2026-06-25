@@ -130,8 +130,10 @@
           const [selectedWord, setSelectedWord] = useState(null); 
           const [answers, setAnswers] = useState({});
           const [feedback, setFeedback] = useState({});
+          const [isBgmPlaying, setIsBgmPlaying] = useState(true);
 
           const audioCtxRef = useRef(null);
+          const bgmRef = useRef(null);
 
           const SKEWER_IMG = "https://raw.githubusercontent.com/SSERAKIM/k-cook-word-game/refs/heads/main/cookgame_01.png";
           const SHABU_IMG = "https://raw.githubusercontent.com/SSERAKIM/k-cook-word-game/refs/heads/main/cookgame_02.png";
@@ -142,6 +144,38 @@
           const SKEWER_BROWN = '#8B4513';
 
           const currentPointColor = type === 'enumeration' ? PINK_COLOR : BLUE_COLOR;
+
+          // 배경음악 설정 및 자동 재생 시도
+          useEffect(() => {
+            bgmRef.current = new Audio("https://github.com/KOKIM12/k-cook-word-game/raw/refs/heads/main/Dumpling_Cart_Sunrise.mp3");
+            bgmRef.current.loop = true;
+            bgmRef.current.volume = 0.3;
+            
+            const playPromise = bgmRef.current.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(error => {
+                console.warn("Autoplay blocked by browser. User interaction needed.", error);
+                setIsBgmPlaying(false);
+              });
+            }
+
+            return () => {
+              if (bgmRef.current) {
+                bgmRef.current.pause();
+                bgmRef.current.src = "";
+              }
+            };
+          }, []);
+
+          const toggleBgm = () => {
+            if (!bgmRef.current) return;
+            if (isBgmPlaying) {
+              bgmRef.current.pause();
+            } else {
+              bgmRef.current.play().catch(e => console.error(e));
+            }
+            setIsBgmPlaying(!isBgmPlaying);
+          };
 
           const play8BitSound = (soundType) => {
             try {
@@ -303,11 +337,20 @@
                       {view === 'quiz' && <div className="text-[10px] sm:text-[12px] mt-0.5 font-bold" style={{ color: currentPointColor }}>{type === 'enumeration' ? '산적꼬치' : '샤브샤브'}</div>}
                     </div>
                   </div>
-                  {view === 'quiz' && (
-                    <button onClick={() => setView('home')} className="px-3 py-1 sm:px-4 sm:py-2 bg-slate-100 border border-slate-900 text-[12px] sm:text-[14px] hover:bg-white active:translate-y-0.5 transition-all font-bold">
-                      뒤로가기
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <button 
+                      onClick={toggleBgm} 
+                      className="text-xl p-1.5 sm:p-2 border-2 border-slate-900 rounded-lg bg-slate-50 hover:bg-white active:translate-y-0.5 transition-all shadow-sm"
+                      title={isBgmPlaying ? "배경음악 끄기" : "배경음악 켜기"}
+                    >
+                      {isBgmPlaying ? '🔊' : '🔇'}
                     </button>
-                  )}
+                    {view === 'quiz' && (
+                      <button onClick={() => setView('home')} className="px-3 py-1 sm:px-4 sm:py-2 bg-slate-100 border border-slate-900 text-[12px] sm:text-[14px] hover:bg-white active:translate-y-0.5 transition-all font-bold">
+                        뒤로가기
+                      </button>
+                    )}
+                  </div>
                 </nav>
               )}
 
